@@ -3,14 +3,144 @@
     <head>
         <meta charset="utf-8">
         <title>Gestionnaire de prêt</title>
-        <script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
+        <!--<script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>-->
+        <script src="jquery.js"></script>
+        <style>
+            h2{
+                display: inline-block;
+            }
+            
+            #detail{
+                margin-left: 100px;
+            }
+            #prets{
+                /*height: 300px;*/
+                width: 300px;
+                display: inline-block;
+            }
+            
+            
+            #detailblock {
+                display: inline-block;
+                margin-left: 50px;
+            }
+            
+            button{
+                margin-top : 20px;
+            }
+
+        </style>
         <script>
         $(function(){
-            $('#title').text("À vous de jouer")
-        })
+             $('#prets').on('change', function(){
+                 //alert($('#prets').val())
+                 $('#detail').text("Detail du pret "+$('#prets').val())
+                 detail($('#prets').val())
+             })
+             
+             refresh()
+         })
+       
+        
+        function refresh(){
+            var listPrets = $('#prets')
+            
+            listPrets.empty()
+            
+            $.ajax('/prets', {
+                success: function(data){
+                    for(var pret of data) {
+                        listPrets.append(`<option value='${pret.id}'>${pret.quoi} (${pret.qui})</option>`)
+                    }
+                }
+            })
+        }
+        
+        function detail(id){
+            $.ajax('/prets/'+id, {
+                success: function(data){
+                    for(var value of data) {
+                        $('#qui').val(value.qui)
+                        $('#quoi').val(value.quoi)
+                        $('#statut').val(value.statut)
+                    }
+                }
+            })
+        }
+        
+        function newPret(){
+            var quiPost = $('#qui').val()
+            var quoiPost = $('#quoi').val()
+            var statutPost = $('#statut').val()
+            $.ajax('/prets',{
+                method: 'POST',
+                contentType : 'application/json',
+                data: JSON.stringify({qui : quiPost, quoi : quoiPost, statut : statutPost}),
+                //le post fonctionne mais ne passe pas dans le success ? 
+                //Du coup refresh et remise a zero des champs dans le error
+                success : refresh(),
+                error: function(){
+                    console.log(JSON.stringify({qui : quiPost, quoi : quoiPost, statut : statutPost}))
+                    refresh()
+                    $('#qui').val('')
+                    $('#quoi').val('')
+                    $('#statut').val('')
+                }
+            })
+        }
+        
+        function changePret(){
+            var id = $('#prets').val()
+            var quiPost = $('#qui').val()
+            var quoiPost = $('#quoi').val()
+            var statutPost = $('#statut').val()
+            $.ajax('/prets/'+id,{
+                method: 'PUT',
+                contentType : 'application/json',
+                data: JSON.stringify({qui : quiPost, quoi : quoiPost, statut : statutPost}),
+
+                success: function(data){
+                    console.log('success :'+data)
+                    refresh()
+                    $('#qui').val('')
+                    $('#quoi').val('')
+                    $('#statut').val('')
+                },
+                error: function(){
+                    console.log(JSON.stringify({qui : quiPost, quoi : quoiPost, statut : statutPost}))
+                    alert('Error')
+                }
+            })
+            
+        }
         </script>
     </head>
     <body>
-        <h1 id="title">Sera remplacé par jQuery</h1>
+        
+        <h2 id="liste" class="liste">Emprunt en cours</h2>
+        <h2 id="detail">Detail</h2><br>
+        
+        <select size="10" id="prets">
+            <!-- dynamically generated -->
+        </select>
+      
+        <div id="detailblock">      
+            
+            <label>Qui : </label> 
+            <input type="text" id="qui" value="124"/><br>
+            <label>Quoi : </label> 
+            <input type="text" id="quoi"/><br>
+            <label>Statut : </label> 
+            <select id="statut">
+                <option value="prete">Prete</option>
+                <option value="rendu">Rendu</option>
+                <option value="annule">Annule</option>
+            </select>    
+            <br>
+            <button onclick="newPret()">Creer comme nouveau pret</button>
+            <button onclick="changePret()">Modifier le pret</button>
+        </div>
+        
+        <button onclick="refresh()" class="actu">Actualiser</button>
     </body>
 </html>
