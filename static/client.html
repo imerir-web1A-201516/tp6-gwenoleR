@@ -5,7 +5,12 @@
         <title>Gestionnaire de prêt</title>
         <!--<script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>-->
         <script src="jquery.js"></script>
-        <style>
+        <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+        <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>        <style>
+            body{
+                margin: 20px;
+            }
+           /* 
             h2{
                 display: inline-block;
             }
@@ -14,7 +19,6 @@
                 margin-left: 100px;
             }
             #prets{
-                /*height: 300px;*/
                 width: 300px;
                 display: inline-block;
             }
@@ -28,6 +32,7 @@
             button{
                 margin-top : 20px;
             }
+            */
 
         </style>
         <script>
@@ -38,19 +43,34 @@
                  detail($('#prets').val())
              })
              
+             $('#users').on('change', function(){
+                 detailUser($('#users').val())
+             })
+             
              refresh()
          })
+         
+
        
         
         function refresh(){
             var listPrets = $('#prets')
+            var listUsers = $('#users')
             
             listPrets.empty()
+            listUsers.empty()
             
             $.ajax('/prets', {
                 success: function(data){
                     for(var pret of data) {
                         listPrets.append(`<option value='${pret.id}'>${pret.quoi} (${pret.qui})</option>`)
+                    }
+                }
+            })
+            $.ajax('/users', {
+                success: function(data){
+                    for(var user of data) {
+                        listUsers.append(`<option value='${user.id}'>${user.prenom} ${user.nom}</option>`)
                     }
                 }
             })
@@ -113,34 +133,104 @@
             })
             
         }
+        
+         function newUser(){
+            var nameUser = $('#nom').val()
+            var prenomUser = $('#prenom').val()
+            $.ajax('/users',{
+                method: 'POST',
+                contentType : 'application/json',
+                data: JSON.stringify({nom : nameUser, prenom : prenomUser}),
+                //le post fonctionne mais ne passe pas dans le success ? 
+                //Du coup refresh et remise a zero des champs dans le error
+                success : function(){
+                    refresh()
+                    $('#nom').val('')
+                    $('#prenom').val('')
+                },
+                error: function(){
+                    console.log(JSON.stringify({nom : nameUser, prenom : prenomUser}))
+                    refresh()
+                    $('#nom').val('')
+                    $('#prenom').val('')
+                }
+            })
+        }
+        
+        function detailUser(id){
+            $.ajax('/users/'+id, {
+                success: function(data){
+                    for(var value of data) {
+                        $('#nom').val(value.nom)
+                        $('#prenom').val(value.prenom)
+                    }
+                }
+            })
+        }
+        
+        function changeUser(){
+            var id = $('#users').val()
+            var nomPost = $('#nom').val()
+            var prenomPost = $('#prenom').val()
+            $.ajax('/users/'+id,{
+                method: 'PUT',
+                contentType : 'application/json',
+                data: JSON.stringify({prenom : prenomPost, nom : nomPost}),
+
+                success: function(data){
+                    console.log('success :'+data)
+                    refresh()
+                    $('#nom').val('')
+                    $('#prenom').val('')
+                },
+                error: function(){
+                    console.log(JSON.stringify({qui : quiPost, quoi : quoiPost, statut : statutPost}))
+                    alert('Error')
+                }
+            })
+            
+        }
+        
+        
         </script>
     </head>
     <body>
         
         <h2 id="liste" class="liste">Emprunt en cours</h2>
-        <h2 id="detail">Detail</h2><br>
         
-        <select size="10" id="prets">
+        
+        <select size="10" id="prets" class="form-control">
             <!-- dynamically generated -->
         </select>
       
         <div id="detailblock">      
-            
+            <h2 id="detail">Detail</h2>
             <label>Qui : </label> 
-            <input type="text" id="qui" value="124"/><br>
+            <input type="text" id="qui" class="form-control"/><br>
             <label>Quoi : </label> 
-            <input type="text" id="quoi"/><br>
+            <input type="text" id="quoi" class="form-control"/><br>
             <label>Statut : </label> 
-            <select id="statut">
+            <select id="statut" class="form-control">
                 <option value="prete">Prete</option>
                 <option value="rendu">Rendu</option>
                 <option value="annule">Annule</option>
             </select>    
             <br>
-            <button onclick="newPret()">Creer comme nouveau pret</button>
-            <button onclick="changePret()">Modifier le pret</button>
+            <button onclick="newPret()" class="btn btn-primary">Creer comme nouveau pret</button>
+            <button onclick="changePret()" class="btn btn-warning">Modifier le pret</button>
         </div>
         
-        <button onclick="refresh()" class="actu">Actualiser</button>
+        <!--<button onclick="refresh()" class="btn btn-info" >Actualiser</button><br>-->
+        
+        <h2>Utilisateurs connus</h2><br>
+        <select id='users' size="10" class="form-control">
+            <!--Dynamique-->
+        </select><br>
+         <label>Nom : </label> 
+         <input type="text" id="nom" class="form-control"/><br>
+         <label>Prenom : </label> 
+         <input type="text" id="prenom" class="form-control"/><br>
+         <button onclick='newUser()' class="btn btn-primary">Creer comme nouvel utilisateur</button>
+         <button onclick='changeUser()' class="btn btn-warning">Modifier l'utilisateur</button>
     </body>
 </html>

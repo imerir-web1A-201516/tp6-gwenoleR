@@ -91,6 +91,79 @@ def prets_changeone(id):
     return resp
   
 #-----------------------------------------------------------------
+@app.route('/users', methods=['GET'])
+def user_fetchall():
+  db = Db()
+  result = db.select("SELECT * FROM users")
+  db.close()
+  
+  resp = make_response(json.dumps(result))
+  resp.mimetype = 'application/json'
+  return resp
+  
+
+#-----------------------------------------------------------------
+
+@app.route('/users', methods=['POST'])
+def user_add():
+  try :
+    data = request.get_json()
+    db = Db()
+    result = db.select("INSERT INTO users (nom, prenom) VALUES (%(nom)s,%(prenom)s) RETURNING id",{
+      'nom' : data['nom'],
+      'prenom' : data['prenom']
+    })
+    
+    
+    resp = make_response('', 201)
+    resp.mimetype = 'application/json'
+    resp.headers['Location'] = "/users/%d" % result[0]['id']
+    db.close()
+    return resp
+  except:
+    resp = make_response('', 400)
+    return resp
+
+#-----------------------------------------------------------------
+
+@app.route('/users/<int:id>', methods=['GET'])
+def users_fetchone(id):
+  db = Db()
+  result = db.select("SELECT * FROM users WHERE id=%(id)s",{
+    'id' : id
+  })
+  db.close()
+    
+  if len(result) != 1:
+    return make_response("Not found", 404)
+    
+  resp = make_response(json.dumps(result),200)
+  resp.mimetype = 'application/json'
+  return resp    
+    
+#-----------------------------------------------------------------
+
+@app.route('/users/<int:id>', methods=['PUT'])
+def users_changeone(id):
+  try :
+    data = request.get_json()
+    db = Db()
+    result = db.execute("UPDATE users SET nom = %(nom)s, prenom = %(prenom)s WHERE id=%(id)s",{
+      'nom' : data['nom'],
+      'prenom' : data['prenom'],
+      'id' : id
+    })
+    
+    
+    resp = make_response('', 204)
+    db.close()
+    return resp
+  except:
+    resp = make_response('', 400)
+    return resp
+  
+#-----------------------------------------------------------------
+
 
 if __name__ == "__main__":
   app.run()
